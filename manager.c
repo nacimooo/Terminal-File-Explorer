@@ -19,16 +19,20 @@ char previous_previous_path[100];
 char current_line[SIZE];
 // input from getch
 char current_input;
+char local_menu = 0;
+
 // position
 int current_position = 0;
 int cursor_position = 0;
+
+int local_pos = 0;
 
 // path stuff
 char current_path[200];
 
 int write = 0;
 
-char options[] = "----------------------------------------------------------------------------------\n(N)ew Directory\t\t(P)revious Directory\t\t(Q)uit\n----------------------------------------------------------------------------------\n";
+char options[] = "----------------------------------------------------------------------------------\n(N)ew Directory\t\t(P)revious Directory\t\t(Q)uit\n\n(T)New File\t\t(R)emove File\n----------------------------------------------------------------------------------\n";
 
 // checks if the given string is a file
 int check_for_file(char string[]){
@@ -92,6 +96,62 @@ char* go_back (char *String){
 
     return String;
 }
+
+void print_local_options(char* opt[]){
+     // loop for as many elements
+    for (int i = 0; i < 2; i++){
+        // get the string pointer from the array
+        char *optionCore = opt[i];
+
+        if (local_pos == i){
+            optionCore[0] = '>';
+        }
+        
+        // loop for every chacter in the string
+        for (int j = 0; j < 4; j++){
+            char let = optionCore[j];
+            printw("%c", let);
+        }
+        printw("\n");
+    }
+    
+}
+
+int local_options(){
+    int finito = 0;
+    while (finito == 0){
+        printw("----------------------------------------------------------------------------------\n\t\tFile Deletion\n----------------------------------------------------------------------------------\n\n\n\tDo you wish to delete the following file? %s\n", line);
+
+        // the array elements
+        char option1[4] = " Yes";
+        char option2[4] = " No ";
+
+        // string array pointer
+        char* options[2] = {option1, option2};
+        print_local_options(options);
+
+        current_input = getch();
+
+        // go Down
+        if (current_input == 's'){
+            local_pos ++;
+        }
+
+        // Go Up
+        if (current_input == 'w'){
+            local_pos--;
+        }
+        if (current_input == '\n'){
+            finito = 1;
+        }
+        
+        clear();
+    }
+    return local_pos;
+
+}
+
+
 
 int main(){
 
@@ -187,7 +247,7 @@ int main(){
                 current_line[0] = '>';
 
 
-
+                /*------------------------------------------------------------*/
                 // FOR GOING BACK
                 if (write == 2){
                     
@@ -212,7 +272,7 @@ int main(){
                     write = 0;
                 }
 
-
+                /*------------------------------------------------------------*/
                 // FOR GOING FORWARD
                 while (write == 1){
 
@@ -256,6 +316,8 @@ int main(){
                         write = 0;}
                 }
 
+                /*------------------------------------------------------------*/
+                // CREATE DIRECTORY
                 if (write == 3){
                     // clear the screen for special action
                     clear();
@@ -292,8 +354,9 @@ int main(){
                     write = 0;
                     
                 }
-
-                // custom command
+                
+                /*------------------------------------------------------------*/
+                // CUSTOM COMMAND
                 if (write == 4){
                     // clear the screen for special action
                     clear();
@@ -312,7 +375,94 @@ int main(){
                     write = 0;
                 }
 
-                
+
+                /*------------------------------------------------------------*/
+                // CREATE FILE
+                if (write == 5){
+                    // clear the screen for special action
+                    clear();
+                    // print prompts
+                    printw("-----------------------------------\n\tFile Creation\n-----------------------------------\n");
+                    printw("File Name: ");
+
+                    // name of the file
+                    char dir_name[100];
+                    // get the name
+                    scanw("%s", dir_name);
+                    // current path
+                    char dir_path[1000] = "";
+                    strcpy(dir_path, path);
+
+                    // add the directory name to the overall path
+                    strcat(dir_path, dir_name);
+                    // get the touch string to passed to the system command
+                    char touch[1000] = "touch ";
+                    strcat(touch, dir_path);
+                    strcat(touch, "'");
+
+                    // create the file
+                    system(touch);
+                    printw("File Created Successfully");
+                    num_of_lines++;
+                    path[sizeof(path) - 1] = '\0';
+
+                    // wait for user input
+                    getch();
+                    clear();
+
+
+                    refresh_screen();
+                    
+                    write = 0;
+                    
+                }
+
+                /*------------------------------------------------------------*/
+                // REMOVE FILE
+                if (write == 6){
+                    clear();
+
+                    if (check_for_file(line) == 1){
+                        int choice = local_options();
+
+
+                        if (choice == 0){
+                            for (int i = 0; i < sizeof(line); i++){
+                            if (line[i] == '\n'){
+                                line[i] = '\0';
+                            }
+
+                            }
+                            char path_copy[100];
+                            strcpy(path_copy, path);
+                            strcat(path_copy, line);
+                            char rm[100] = "rm ";
+                            strcat(rm, path_copy);
+                            strcat(rm, "'");
+
+                            system(rm);
+                            num_of_lines--;
+                            path[sizeof(path) - 1] = '\0';
+                            printw("----------------------------------------------------------------------------------\n\t\tFile Deletion\n----------------------------------------------------------------------------------\n\n\n\tfile %s has been deleted", line);
+                        }
+
+                        else{
+                            printw("----------------------------------------------------------------------------------\n\t\tFile Deletion\n----------------------------------------------------------------------------------\n\n\n\tDELETION CANCELED");
+                        }
+
+                    }
+                    
+                    else{
+                        printw("----------------------------------------------------------------------------------\n\t\tFile Deletion\n----------------------------------------------------------------------------------\n\n\n\tDELETION CANCELED, Item Selected is a dir");
+                    }
+
+                    getch();
+                    clear();
+                    refresh_screen();
+                    write = 0;
+                }
+
+
             }
             
             printw(current_line);
@@ -322,36 +472,67 @@ int main(){
     // get user input
     current_input = getch();
 
-    if (current_input == 's'){
-        cursor_position++;
+    if (local_menu == 0){
+        // go Down
+        if (current_input == 's'){
+            cursor_position++;
+        }
+
+        // Go Up
+        if (current_input == 'w'){
+            cursor_position--;
+        }
+
+        // Select
+        if (current_input == ' ' || current_input == '\n'){
+            write = 1;
+        }
+
+
+        // Go Back
+        if (current_input == 'p'){
+            write = 2;
+        }
+
+        // New Dir
+        if (current_input == 'n' || current_input == 'N'){
+            write = 3;
+        }
+
+        // Custom Text
+        if (current_input == 'C' || current_input == 'c'){
+            write = 4;
+        }
+
+        // Create File
+        if (current_input == 'T' || current_input == 't'){
+            write = 5;
+        }
+
+        // Remove File
+        if (current_input == 'R' || current_input == 'r'){
+            write = 6;
+        }
+
+        if (cursor_position > num_of_lines-1){
+            cursor_position = num_of_lines;
+        }
+        
+        if (cursor_position < 0){
+            cursor_position = 0;
+        }
     }
 
-    if (current_input == 'w'){
-        cursor_position--;
-    }
+    if (local_menu == 1){
+        // go Down
+        if (current_input == 's'){
+            local_pos ++;
+        }
 
-    if (current_input == ' ' || current_input == '\n'){
-        write = 1;
-    }
-
-    if (current_input == 'p'){
-        write = 2;
-    }
-
-    if (current_input == 'n' || current_input == 'N'){
-        write = 3;
-    }
-
-    if (current_input == 'C' || current_input == 'c'){
-        write = 4;
-    }
-
-    if (cursor_position > num_of_lines-1){
-        cursor_position = num_of_lines;
-    }
-    
-    if (cursor_position < 0){
-        cursor_position = 0;
+        // Go Up
+        if (current_input == 'w'){
+            local_pos--;
+        }
     }
 
 
@@ -362,5 +543,7 @@ int main(){
     }
 
     endwin();
+    system("clear");
+
     return 0;
 }
